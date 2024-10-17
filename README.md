@@ -1,4 +1,4 @@
-Data and R scrips for the paper 'Disentangling technological traditions: 
+Data and R scripts for the paper 'Disentangling technological traditions: 
 comparative chaînes opératoires of painted pre-Hispanic ceramics from 
 Nariño, Colombia'
 
