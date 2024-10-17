@@ -1,9 +1,9 @@
-Data and R scripts for the paper 'Disentangling technological traditions: 
-comparative chaînes opératoires of painted pre-Hispanic ceramics from 
-Nariño, Colombia'
+This repository contains the data and scripts used in the manuscript:
+
+Klesner, C.E., Crawford, R., Aristizábal Losada, L., Bernal Arévalo, M., Campos-Quintero, L.M., Cárdenas Arroyo, F., Maya Cabrera, M.C., Murillo Jaramillo, P.A., Pérez Fernández, D.A., Sáenz-Samper, J., Uribe-Villegas, M.A., Martinón-Torres, M. 'Disentangling technological traditions: comparative chaînes opératoires of painted pre-Hispanic ceramics from Nariño, Colombia.' 
 
 The repository is organised into three directories: 
-figures, scripts, and supplemental materials 
+Figures, Scripts, and Supplemental Materials 
 
 The scripts directory contains R scripts for all of the analysis as well 
 as the data (as tps and csv files), figures contains all figures in the
