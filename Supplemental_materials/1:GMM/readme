@@ -2,8 +2,8 @@ Repository for GMM
 
 Consists of .csv file containing links to the indiviudal vessels 3D models hosted on Sketchfab, as well as figures references in the text. 
 
-Supplemental Figure 1. 
+Supplemental Figure 1. Biplot of PC1 (representing 84.8% of the total variance) versus PC3 (representing 4.35% of the total variance) for all 85 vessels showing samples distinguished by ware type with 90% confidence ellipses overlaid. 
 
-Supplemental Figure 2. 
+Supplemental Figure 2. Biplot of LD1 (91.2% of the variance) versus LD2 (8.77% of the total variance) for all 85 vessels showing samples distinguished by ware. 
 
-Supplemental Figure 3. 
+Supplemental Figure 3. Dendrogram showing results of hierarchical clustering analysis, with the samples distinguished by ware. 
