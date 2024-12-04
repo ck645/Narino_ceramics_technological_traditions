@@ -15,26 +15,16 @@
 
 ## Ensure you have installed necessary R packages
 
-install.packages("dplyr")
-install.packages("rio")
-install.packages("tidyverse")
-install.packages("plyr")
-
-install.packages("Momocs")
-install.packages("stats")
-install.packages("corrr")
-install.packages("rcarbon")
-
-install.packages("ggplot2")
-install.packages("ggbeeswarm")
-install.packages("ggdist")
-install.packages("gghalves")
-install.packages("ggbiplot")
-install.packages("dendextend")
-install.packages("ggtern")
-install.packages("RColorBrewer")
-
-
+# Ensure necessary R packages are installed
+packages <- c("dplyr", "rio", "tidyverse", "plyr",
+              "Momocs", "stats", "corrr", "rcarbon",
+              "ggplot2", "ggbeeswarm", "ggdist", "gghalves", 
+              "ggbiplot", "dendextend", "ggtern", "RColorBrewer")
+for (pkg in packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+}
 
 
 ## Color conventions for the script - based on brewer palette, Dark2 
