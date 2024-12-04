@@ -15,11 +15,10 @@
 
 ## Ensure you have installed necessary R packages
 
-# Ensure necessary R packages are installed
-packages <- c("dplyr", "rio", "tidyverse", "plyr",
-              "Momocs", "stats", "corrr", "rcarbon",
-              "ggplot2", "ggbeeswarm", "ggdist", "gghalves", 
-              "ggbiplot", "dendextend", "ggtern", "RColorBrewer")
+packages <- c("dplyr", "rio", "devtools", "tidyverse", "plyr",
+              "Momocs", "stats", "corrr", "rcarbon", "ggplot2", 
+              "ggbeeswarm", "ggdist", "gghalves", "ggbiplot", 
+              "dendextend", "ggtern", "RColorBrewer", "spatstat.data")
 for (pkg in packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     install.packages(pkg)
@@ -461,7 +460,7 @@ pcashape %>% MANOVA_PW(GMM_database_p$V3, retain = 0.99)
 
 
 
-# boxplots of metric measurements
+## **Boxplots of metric measurements**
 
 metric_measurements <- import('metric_vessel_measurements.csv')
 
@@ -508,7 +507,7 @@ Height <- ggplot(metric_measurements, aes(x = Ware, y = metric_measurements$`Hei
   ) +
   scale_fill_manual(values = manual_colors) + 
   scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+  coord_cartesian(xlim = c(2.2, 3.9), clip = "off") 
 plot(Height)
 
 png(filename = "Figure3a.png", width = 2400, height = 1000, res=300)
@@ -540,7 +539,7 @@ Base <- ggplot(metric_measurements, aes(x = Ware,
   ) +
   scale_fill_manual(values = manual_colors) + 
   scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+  coord_cartesian(xlim = c(2.2, 3.9), clip = "off") 
 plot(Base)
 
 png(filename = "Figure3b.png", width = 2400, height = 1000, res=300)
@@ -571,7 +570,7 @@ Rim <- ggplot(metric_measurements, aes(x = Ware, y = `Rim Radius (cm)`,
   ) +
   scale_fill_manual(values = manual_colors) + 
   scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+  coord_cartesian(xlim = c(2.2, 3.9), clip = "off") 
 plot(Rim)
 
 png(filename = "Figure3c.png", width = 2400, height = 1000, res=300)
