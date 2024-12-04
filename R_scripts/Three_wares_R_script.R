@@ -13,7 +13,31 @@
 
 
 
-## Color conventions - based on brewer palette, Dark2 
+## Ensure you have installed necessary R packages
+
+install.packages("dplyr")
+install.packages("rio")
+install.packages("tidyverse")
+install.packages("plyr")
+
+install.packages("Momocs")
+install.packages("stats")
+install.packages("corrr")
+install.packages("rcarbon")
+
+install.packages("ggplot2")
+install.packages("ggbeeswarm")
+install.packages("ggdist")
+install.packages("gghalves")
+install.packages("ggbiplot")
+install.packages("dendextend")
+install.packages("ggtern")
+install.packages("RColorBrewer")
+
+
+
+
+## Color conventions for the script - based on brewer palette, Dark2 
 # "Capulí" = "#1B9E77", "Piartal" = "#7570B3", "Tuza" = "#D95F02", 
 # "Tuza - Red Slip" = "#E7298A", "Piartal - 1" = "#E6AB02", 
 # "Piartal - 2" = "#A6761D", #  "Undecorated" = "#666666"
@@ -26,14 +50,18 @@
 # (University of Southampton, United Kingdom)"
 
 
-## Load relevant packages
+## Load relevant packages for all GMM analysis
 
 library(Momocs)
 library(rio)
 library(tidyverse)
 library(ggplot2)
 library(RColorBrewer)
-
+library(ggbeeswarm)
+library(ggdist)
+library(gghalves)
+library(vegan)
+library(dplyr)
 
 ## **Creating and Importing GMM Data**
 
@@ -42,23 +70,22 @@ library(RColorBrewer)
 tpsdata <- Momocs::import_tps("intervesselcomp.TPS")
 GMM_database <- rio::import("GMM_database.csv")
 
+
 # assigning factors
 
 # Note - V1 = Sample, V3 = Ware, V5 = Site
 
-GMM_database$V1 <- as.factor(GMM_database$V1)
 
+GMM_database$V1 <- as.factor(GMM_database$V1)
 is.factor(GMM_database$V1)
 
 GMM_database$V3 <- as.factor(GMM_database$V3)
-
 is.factor(GMM_database$V3)
-
 summary(GMM_database$V3)
 
 GMM_database$V5 <- as.factor(GMM_database$V5)
-
 is.factor(GMM_database$V5)
+
 
 ## **Creation of the "Out" object**  
 
@@ -66,12 +93,13 @@ is.factor(GMM_database$V5)
 # and the database IDs are in the same order
 
 table(names(tpsdata$coo)==GMM_database$V1)
-
 shape <- Out(tpsdata$coo, fac = GMM_database)
+
 
 # check outlines
 
 Momocs::mosaic(shape, f=GMM_database$V3, pal = pal_qual_Dark2)
+
 
 ## **Outline normalisation**  
 
@@ -82,17 +110,17 @@ shapenorm <- coo_scale(shapenorm)
 shapenorm <- coo_close(shapenorm)
 shapenorm2 <- shapenorm %>% coo_slidedirection("right") %>% coo_untiltx()
 
+
 # check outlines:
 
 stack(shapenorm, title = "Stack: Normalised Outlines")
 stack(shapenorm2, title = "Stack: Normalised Outlines with coo_slidedirection(right)")
 
+
 ## **Elliptic Fourier Analysis**
 
-calibrate_harmonicpower_efourier(shapenorm2, nb.h = 9)
-
+calibrate_harmonicpower_efourier(shapenorm2, nb.h = 30)
 calibrate_reconstructions_efourier(shapenorm2, range = 1:30)
-
 calibrate_deviations_efourier(shapenorm2)
 
 # generate EFA outlines with harmonics = 99.9% harmonic power
@@ -106,25 +134,30 @@ efashape <- efourier(shapenorm2, nb.h = 30, smooth.it = 0, norm = TRUE)
 
 pcashape <- PCA(efashape)
 
+
 # determine PC contributions
 
 Scree <- scree(pcashape)
+
 
 # plot Scree - pick number of PCs that amount to >90%
 
 PC_Scree <- scree_plot(pcashape, nax = 1:5)
 PC_Scree + ggtitle("PC Contribution")
 
+
 # plot PC contribution - pick number of PCs that amount to >90%
 
 PC_Contribution <- PCcontrib(pcashape, nax = 1:3, 
                              sd.r = c(-1, -0.5, 0, 0.5, 1))
+
 
 # Save PNG file
 png(filename = "Figure4.png", width = 2400, height = 1000, res=300)
 PCcontrib(pcashape, nax = 1:3, 
           sd.r = c(-1, -0.5, 0, 0.5, 1))
 dev.off()
+
 
 # plot PCA by Ware type - no ellipses
 
@@ -138,6 +171,7 @@ plot_PCA(pcashape, axes = c(1,2), morphospace_position = "xy",
          title = "PC 1 vs PC 2")
 dev.off()
 
+
 #plot PCA by Ware with confidence ellipses = 90%
 
 plot_PCA(pcashape, axes = c(1,2), GMM_database$V3, morphospace_position = "range_axes", 
@@ -147,10 +181,6 @@ plot_PCA(pcashape, axes = c(1,2), GMM_database$V3, morphospace_position = "range
 plot_PCA(pcashape, axes = c(1,3), GMM_database$V3, morphospace_position = "range_axes", 
          center_origin = FALSE, zoom = 0.9, chull = FALSE, palette = pal_qual_Paired, 
          title = "PC 1 vs PC 3") %>% layer_ellipses(conf = 0.9)
-
-plot_PCA(pcashape, axes = c(2,3), GMM_database$V3, morphospace_position = "range_axes", 
-         center_origin = FALSE, zoom = 0.9, chull = FALSE, palette = pal_qual_Paired, 
-         title = "PC 2 vs PC 3") %>% layer_ellipses(conf = 0.9)
 
 png(filename = "Figure5b.png", width = 2400, height = 1600, res=300)
 plot_PCA(pcashape, axes = c(1,2), GMM_database$V3, morphospace_position = "range_axes", 
@@ -166,10 +196,12 @@ plot_PCA(pcashape, axes = c(1,3), GMM_database$V3, morphospace_position = "range
          title = "PC 1 vs PC 3") %>% layer_ellipses(conf = 0.9)
 dev.off()
 
+
 #boxplot of PC 
 
 boxplot <- boxplot(pcashape, GMM_database$V3, nax = 1:3)
 boxplot + scale_fill_brewer(palette = "Paired") + ggtitle("PC contribution sections")
+
 
 #export PCA scores
 
@@ -203,22 +235,22 @@ plot_LDA(dashape99, axes = c(1,2), zoom = 1, chull = FALSE,
          pal_manual(c("#1B9E77", "#7570B3", "#D95F02")))
 dev.off()
 
+
 ## **Multivariate Analysis of Variance (MANOVA)**
 
-# Is there significant shape difference by wares? 
+# Interested to see if there is any significant shape difference by wares? 
 # Looking at the PC retaining 90% of total variance and 99% of total variance
 
 efashape %>% MANOVA(GMM_database_filtered$V3)
-
 pcashape %>% MANOVA(GMM_database_filtered$V3, test = c("Pillai"), retain = 0.95)
-
 pcashape %>% MANOVA(GMM_database_filtered$V3, test = c("Pillai"), retain = 0.99)
+
 
 # Which wares differ?
 
 MANOVA_PW(pcashape, GMM_database$V3, retain = 0.99)
-
 pcashape %>% MANOVA_PW(GMM_database_filtered$V3, retain = 0.99)
+
 
 ## **Hierarchical and K-Means Cluster Analysis** 
 
@@ -232,7 +264,8 @@ CLUST(pcashape, retain = 0.90, GMM_database$V3, dist_method = "euclidean",
       palette = pal_manual(c("#1B9E77", "#666666", "#7570B3", "#D95F02", "#E7298A")))
 dev.off()
 
-## **Mean shapes**
+
+## **Mean shapes based on wares**
 
 meanshape <- Out(tpsdata$coo, fac = GMM_database_filtered$V3)
 
@@ -255,10 +288,11 @@ png(filename = "Figure3d.png", width = 2400, height = 2400, res=300)
 Out(Meanshapes$shp) %>% panel(names=FALSE)
 dev.off()
 
+
+
 ## Variance of PCA scores**  
 
-#Import your PCA scores from excel (first turn txt file into csv, step needed given
-#structure of momocs pcashape)
+#Import your PCA scores from csv. Csv generated from exported txt file (above) a step needed given the structure of momocs pcashape)
 
 PC_85 <- import('PC_scores.csv')
 
@@ -284,22 +318,6 @@ PC_85$V3 <- as.factor(PC_85$V3)
 
 # box and whisker
 
-library(ggbeeswarm)
-library(ggdist)
-library(gghalves)
-
-
-ggplot(PC_85, aes(x = PC_85$V3, y = PC_85$PC1)) +
-  geom_boxplot(fill = "grey92") +
-  ggbeeswarm::geom_quasirandom(
-    ## draw bigger points
-    size = 1.5,
-    ## add some transparency
-    alpha = .4,
-    ## control range of the beeswarm
-    width = .2
-  )
-
 manual_colors <- c("#1B9E77", "#7570B3", "#D95F02")
 
 PC1 <- ggplot(PC_85, aes(x = V3, y = PC1, fill = V3, color = V3)) +
@@ -317,13 +335,9 @@ PC1 <- ggplot(PC_85, aes(x = V3, y = PC1, fill = V3, color = V3)) +
     alpha = 0.2,
     color = "black"
   ) +
-  ## add justified jitter from the {gghalves} package
   gghalves::geom_half_point(
-    ## draw jitter on the left
     side = "l", 
-    ## control range of jitter
     range_scale = .4, 
-    ## add some transparency
     alpha = .5,
   ) +
   scale_fill_manual(values = manual_colors) + 
@@ -334,6 +348,7 @@ plot(PC1)
 png(filename = "Figure6a.png", width = 2400, height = 1000, res=300)
 plot(PC1)
 dev.off()
+
 
 PC2 <- ggplot(PC_85, aes(x = V3, y = PC2, fill = V3, color = V3)) +
   ggdist::stat_halfeye(
@@ -350,13 +365,9 @@ PC2 <- ggplot(PC_85, aes(x = V3, y = PC2, fill = V3, color = V3)) +
     alpha = 0.2,
     color = "black"
   ) +
-  ## add justified jitter from the {gghalves} package
   gghalves::geom_half_point(
-    ## draw jitter on the left
     side = "l", 
-    ## control range of jitter
     range_scale = .4, 
-    ## add some transparency
     alpha = .5,
   ) +
   scale_fill_manual(values = manual_colors) + 
@@ -367,6 +378,7 @@ plot(PC2)
 png(filename = "Figure6b.png", width = 2400, height = 1000, res=300)
 plot(PC2)
 dev.off()
+
 
 PC3 <- ggplot(PC_85, aes(x = V3, y = PC3, fill = V3, color = V3)) +
   ggdist::stat_halfeye(
@@ -383,13 +395,9 @@ PC3 <- ggplot(PC_85, aes(x = V3, y = PC3, fill = V3, color = V3)) +
     alpha = 0.2,
     color = "black"
   ) +
-  ## add justified jitter from the {gghalves} package
   gghalves::geom_half_point(
-    ## draw jitter on the left
     side = "l", 
-    ## control range of jitter
     range_scale = .4, 
-    ## add some transparency
     alpha = .5,
   ) +
   scale_fill_manual(values = manual_colors) + 
@@ -402,182 +410,20 @@ plot(PC3)
 dev.off()
 
 
-# boxplots of metric measurements
 
-metric_measurements <- import('metric_vessel_measurements.csv')
+## **Identification of Two Piartal groups**
 
-head(metric_measurements)
-
-metric_measurements$Ware <- as.factor(metric_measurements$Ware)
-
-is.factor(metric_measurements$Ware)
-
-metric_measurements <- as.data.frame(metric_measurements)
-
-is.data.frame(metric_measurements)
-
-metric_measurements <-  metric_measurements %>%
-  mutate(Ware = case_when(
-    Ware == "Capulí - no paint" ~ "Capulí",
-    Ware == "Capuli" ~ "Capulí",
-    Ware == "Tuza - Red slip" ~ "Tuza",
-    Ware == "Piartal - 1" ~ "Piartal",
-    Ware == "Piartal - 2" ~ "Piartal",
-    TRUE ~ as.character(Ware)  # Keep all other values as they are
-  ))
-metric_measurements$Ware <- as.factor(metric_measurements$Ware)
-
-is.numeric(metric_measurements$`Height (cm)`)
-
-Height <- ggplot(metric_measurements, aes(x = Ware, y = metric_measurements$`Height (cm)`, 
-                                          fill = Ware, color = Ware)) +
-  ggdist::stat_halfeye(
-    adjust = .5, 
-    width = .4, 
-    .width = 0, 
-    justification = -.2, 
-    alpha = 0.5,
-    point_colour = NA
-  ) + 
-  geom_boxplot(
-    width = .15, 
-    outlier.shape = NA,
-    alpha = 0.2,
-    color = "black"
-  ) +
-  ## add justified jitter from the {gghalves} package
-  gghalves::geom_half_point(
-    ## draw jitter on the left
-    side = "l", 
-    ## control range of jitter
-    range_scale = .4, 
-    ## add some transparency
-    alpha = .5,
-  ) +
-  scale_fill_manual(values = manual_colors) + 
-  scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
-plot(Height)
-
-png(filename = "Figure3a.png", width = 2400, height = 1000, res=300)
-plot(Height)
-dev.off()
-
-Base <- ggplot(metric_measurements, aes(x = Ware, 
-                                        y = metric_measurements$`Base Radius (cm)`, 
-                                        fill = Ware, color = Ware)) +
-  ggdist::stat_halfeye(
-    adjust = .5, 
-    width = .4, 
-    .width = 0, 
-    justification = -.2, 
-    alpha = 0.5,
-    point_colour = NA
-  ) + 
-  geom_boxplot(
-    width = .15, 
-    outlier.shape = NA,
-    alpha = 0.2,
-    color = "black"
-  ) +
-  ## add justified jitter from the {gghalves} package
-  gghalves::geom_half_point(
-    ## draw jitter on the left
-    side = "l", 
-    ## control range of jitter
-    range_scale = .4, 
-    ## add some transparency
-    alpha = .5,
-  ) +
-  scale_fill_manual(values = manual_colors) + 
-  scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
-plot(Base)
-
-png(filename = "Figure3b.png", width = 2400, height = 1000, res=300)
-plot(Base)
-dev.off()
-
-Rim <- ggplot(metric_measurements, aes(x = Ware, y = `Rim Radius (cm)`, 
-                                       fill = Ware, color = Ware)) +
-  ggdist::stat_halfeye(
-    adjust = .5, 
-    width = .4, 
-    .width = 0, 
-    justification = -.2, 
-    alpha = 0.5,
-    point_colour = NA
-  ) + 
-  geom_boxplot(
-    width = .15, 
-    outlier.shape = NA,
-    alpha = 0.2,
-    color = "black"
-  ) +
-  ## add justified jitter from the {gghalves} package
-  gghalves::geom_half_point(
-    ## draw jitter on the left
-    side = "l", 
-    ## control range of jitter
-    range_scale = .4, 
-    ## add some transparency
-    alpha = .5,
-  ) +
-  scale_fill_manual(values = manual_colors) + 
-  scale_color_manual(values = manual_colors) +  
-  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
-plot(Rim)
-
-png(filename = "Figure3c.png", width = 2400, height = 1000, res=300)
-plot(Rim)
-dev.off()
-
-
-# calculated multivariate homogeneity of groups dispersions (variances)
-
-library(vegan)
-library(dplyr)
-
-PC_dist <- PC_85 %>%
-  select(-V1, -V2, -V4, -V5, -V6, -V7, -V8, -V9)
-
-
-d_85 <- dist(PC_dist, method = "euclidean")
-
-dist_85_c <- betadisper(d_85, PC_dist$V3, type = c("centroid"))
-
-dist_85_c[["group.distances"]]
-
-dist_85_m <-betadisper(d_85, PC_dist$V3, type = c("median"))
-
-anova(dist_85_c)
-
-plot(dist_85_c, ellipse = TRUE, hull = FALSE, conf = 0.90)
-
-boxplot(dist_85_c)
-
-permutest(dist_85_c, pairwise = TRUE, permutations = 99)
-
-dist_85_c.HSD <- TukeyHSD(dist_85_c)
-
-plot(dist_85_c.HSD)
-
-
-
-## **Two Piartal groups**
+#follows the protocal detailed above, but Piartal vessels are coded as Piartal - 1 or Piartal - 2 based on their PC1 score 
 
 GMM_database_p <- rio::import("GMM_database_piartal.csv")
 
 GMM_database_p$V1 <- as.factor(GMM_database_p$V1)
-
 is.factor(GMM_database_p$V1)
 
 GMM_database_p$V3 <- as.factor(GMM_database_p$V3)
-
 is.factor(GMM_database_p$V3)
 
 GMM_database_p$V5 <- as.factor(GMM_database_p$V5)
-
 is.factor(GMM_database_p$V5)
 
 table(names(tpsdata$coo)==GMM_database_p$V1)
@@ -619,31 +465,148 @@ plot_PCA(pcashape, axes = c(1,3), GMM_database_p$V3, morphospace_position = "ran
          center_origin = FALSE, zoom = 0.9, chull = FALSE, palette = pal_qual_Paired, 
          title = "PC 1 vs PC 3") %>% layer_ellipses(conf = 0.9)
 
-plot_PCA(pcashape, axes = c(2,3), GMM_database_p$V3, morphospace_position = "range_axes", 
-         center_origin = FALSE, zoom = 0.9, chull = FALSE, palette = pal_qual_Paired, 
-         title = "PC 2 vs PC 3") %>% layer_ellipses(conf = 0.9)
-
 MANOVA_PW(pcashape, GMM_database_p$V3, retain = 0.90)
 
 pcashape %>% MANOVA_PW(GMM_database_p$V3, retain = 0.99)
 
 
 
+# boxplots of metric measurements
+
+metric_measurements <- import('metric_vessel_measurements.csv')
+
+head(metric_measurements)
+metric_measurements$Ware <- as.factor(metric_measurements$Ware)
+is.factor(metric_measurements$Ware)
+
+metric_measurements <- as.data.frame(metric_measurements)
+is.data.frame(metric_measurements)
+
+metric_measurements <-  metric_measurements %>%
+  mutate(Ware = case_when(
+    Ware == "Capulí - no paint" ~ "Capulí",
+    Ware == "Capuli" ~ "Capulí",
+    Ware == "Tuza - Red slip" ~ "Tuza",
+    Ware == "Piartal - 1" ~ "Piartal",
+    Ware == "Piartal - 2" ~ "Piartal",
+    TRUE ~ as.character(Ware)  # Keep all other values as they are
+  ))
+metric_measurements$Ware <- as.factor(metric_measurements$Ware)
+
+is.numeric(metric_measurements$`Height (cm)`)
+
+Height <- ggplot(metric_measurements, aes(x = Ware, y = metric_measurements$`Height (cm)`, 
+                                          fill = Ware, color = Ware)) +
+  ggdist::stat_halfeye(
+    adjust = .5, 
+    width = .4, 
+    .width = 0, 
+    justification = -.2, 
+    alpha = 0.5,
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .15, 
+    outlier.shape = NA,
+    alpha = 0.2,
+    color = "black"
+  ) +
+  gghalves::geom_half_point(
+    side = "l", 
+    range_scale = .4, 
+    alpha = .5,
+  ) +
+  scale_fill_manual(values = manual_colors) + 
+  scale_color_manual(values = manual_colors) +  
+  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+plot(Height)
+
+png(filename = "Figure3a.png", width = 2400, height = 1000, res=300)
+plot(Height)
+dev.off()
+
+
+Base <- ggplot(metric_measurements, aes(x = Ware, 
+                                        y = metric_measurements$`Base Radius (cm)`, 
+                                        fill = Ware, color = Ware)) +
+  ggdist::stat_halfeye(
+    adjust = .5, 
+    width = .4, 
+    .width = 0, 
+    justification = -.2, 
+    alpha = 0.5,
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .15, 
+    outlier.shape = NA,
+    alpha = 0.2,
+    color = "black"
+  ) +
+  gghalves::geom_half_point(
+    side = "l", 
+    range_scale = .4, 
+    alpha = .5,
+  ) +
+  scale_fill_manual(values = manual_colors) + 
+  scale_color_manual(values = manual_colors) +  
+  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+plot(Base)
+
+png(filename = "Figure3b.png", width = 2400, height = 1000, res=300)
+plot(Base)
+dev.off()
+
+
+Rim <- ggplot(metric_measurements, aes(x = Ware, y = `Rim Radius (cm)`, 
+                                       fill = Ware, color = Ware)) +
+  ggdist::stat_halfeye(
+    adjust = .5, 
+    width = .4, 
+    .width = 0, 
+    justification = -.2, 
+    alpha = 0.5,
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .15, 
+    outlier.shape = NA,
+    alpha = 0.2,
+    color = "black"
+  ) +
+  gghalves::geom_half_point(
+    side = "l", 
+    range_scale = .4, 
+    alpha = .5,
+  ) +
+  scale_fill_manual(values = manual_colors) + 
+  scale_color_manual(values = manual_colors) +  
+  coord_cartesian(xlim = c(1.2, 2.9), clip = "off") 
+plot(Rim)
+
+png(filename = "Figure3c.png", width = 2400, height = 1000, res=300)
+plot(Rim)
+dev.off()
+
+
 
 
 #----------------------**Compositional data - pXRF**---------------------------
 
-library(compositions)
 library(rio)
 library(dplyr)
 library(ggplot2)
 library(ggbiplot)
 library(RColorBrewer)
+library(stats)
+library(dendextend)
 
 # Importing the dataset
 database <- rio::import("compdata_piartal.csv")
 
-#cleaning the dataset
+
+## **Cleaning the dataset**
+
 database$Sample <- as.factor(database$Sample)
 database$Collection <- as.factor(database$Collection)
 database$Ware <- as.factor(database$Ware)
@@ -654,6 +617,7 @@ database$Ni <- as.numeric(database$Ni)
 database$Ti <- as.numeric(database$Ti)
 database$Nb <- as.numeric(database$Nb)
 database$Pb <- as.numeric(database$Pb)
+
 
 # remove outliers/non-authentic pieces
 database_filtered <- database %>%
@@ -670,6 +634,7 @@ database_filtered <-  database_filtered %>%
   ))
 database_filtered$Collection <- as.factor(database_filtered$Collection)
 summary(database_filtered$Collection)
+
 
 # Substituting 2/3 value of LLOD for elements not routinely detected (Mg, Ni, Ti, Nb, Pb)
 
@@ -701,6 +666,7 @@ database_filtered <- database_filtered %>%
 
 database_filtered_p <- database_filtered
 
+
 # cleaning ware groups and collections
 database_filtered <-  database_filtered %>%
   mutate(Ware = case_when(
@@ -718,16 +684,17 @@ database_filtered <-  database_filtered %>%
 database_filtered$Ware <- as.factor(database_filtered$Ware)
 summary(database_filtered$Ware)
 
-# Subsetting the dataframe into four groups based on 'component' factors
+
+# Subsetting the dataframe to isolate the fabric component
 fabric_dataset <- filter(database_filtered, component %in% c("fabric"))
 
-# plotting compositional biplots (replace with elements of interest)
 
-##color conventions - brewer paletted, Dark2 
-##"Capulí" = "#1B9E77", "Piartal" = "#7570B3", "Tuza" = "#D95F02", "Tuza - Red Slip" = "#E7298A", "Piartal - 1" = "#E6AB02", "Piartal - 2" = "#A6761D", "Undecorated" = "#666666"
+## **plotting compositional biplots**
 
+# select the wares to plot with 90% confidence ellipses
 ellipse_data_lim <- fabric_dataset %>% 
   filter(Ware %in% c("Capulí", "Piartal", "Tuza"))
+
 
 Fe2O3_vs_CaO_ellipse_lim <- ggplot(fabric_dataset, aes(x = Fe2O3, y = CaO, color = Ware, shape = Collection)) +
   geom_point(size=3) +
@@ -749,8 +716,10 @@ png(filename = "Figure8.png", width = 2400, height = 1600, res=300)
 plot(Fe2O3_vs_CaO_ellipse_lim + theme(axis.line = element_line(color = "black", linewidth = 1, linetype = 1)))
 dev.off()
 
-#PCA 
 
+## ** Compositional PCA**
+
+# Select relevant elements
 pc <- prcomp(fabric_dataset[,c("Al", "K", "Ca", "Ti", "Mn", "Fe", "Zn", "Rb", "Y", "Zr", "Nb", "Pb")],
              center = TRUE,
              scale. = TRUE) 
@@ -765,18 +734,21 @@ pc.dataframe <-  pc.dataframe %>%
   ))
 pc.dataframe$Ware <- as.factor(pc.dataframe$Ware)
 
-# variance explained
+# compute the variance explained
 explained_variance <- pc$sdev^2
 proportion_variance <- explained_variance / sum(explained_variance)
 list(proportion_variance)
 
-# Loadings scaled for visualization
+
+# create the loadings for the element vectors, and scale them for visualization
 loadings <- as.data.frame(pc$rotation)
 loadings_scaled <- loadings*8
 loadings_scaled$Variable <- rownames(loadings)
 
+# select the wares to plot with 90% confidence ellipses
 ellipse_pc.dataframe <- pc.dataframe %>% 
   filter(Ware %in% c("Capulí", "Piartal", "Tuza")) 
+
 
 g2 <- ggplot(pc.dataframe, aes(x = PC1, y = PC2, color = Ware)) +
   geom_point(size=2) +
@@ -798,16 +770,19 @@ png(filename = "Figure9.png", width = 2400, height = 1600, res=300)
 plot((g2) + theme(axis.line = element_line(color = "black", linewidth = 1, linetype = 1)))
 dev.off()
 
-## Piartal groups
+
+## Examine compositional behavior based on the two different Piartal groups
 
 summary(database_filtered_p$Ware)
 
-# Subsetting the dataframe into four groups based on 'component' factors
+# Subsetting the dataframe to look at the fabric
 fabric_p_dataset <- filter(database_filtered_p, component %in% c("fabric"))
+
+# Subset further to isolate just the decorated samples
 fabric_p_dataset <- filter(fabric_p_dataset, Ware %in% c("Capulí", "Piartal", "Piartal - 1", "Piartal - 2", "Tuza", "Tuza - Red Slip"))
 
 
-#plotting PC by Piartal groups
+#plotting PC by Piartal groups (following same protocol as above)
 
 pc_p <- prcomp(fabric_p_dataset[,c("Al", "K", "Ca", "Ti", "Mn", "Fe", "Zn", "Rb", "Y", "Zr", "Nb", "Pb")],
                center = TRUE,
@@ -816,7 +791,6 @@ pc_p <- prcomp(fabric_p_dataset[,c("Al", "K", "Ca", "Ti", "Mn", "Fe", "Zn", "Rb"
 attributes(pc_p) 
 
 pc_p.dataframe <- as.data.frame(pc_p$x)
-
 pc_p.dataframe <- data.frame(pc_p.dataframe, Ware = fabric_p_dataset$Ware, Site = fabric_p_dataset$Collection, Sample = fabric_p_dataset$Sample)
 
 summary(pc_p.dataframe$Ware)
@@ -833,9 +807,7 @@ summary(pc_p.dataframe$Site)
 
 # Loadings scaled for visualization
 loadings_p <- as.data.frame(pc_p$rotation)
-
 loadings_p_scaled <- loadings_p*8
-
 loadings_p_scaled$Variable <- rownames(loadings_p)
 
 ellipse_pc_p.dataframe <- pc_p.dataframe %>% 
@@ -857,8 +829,6 @@ g2_p <- ggplot(pc_p.dataframe, aes(x = PC1, y = PC2, color = Ware)) +
 print(g2_p) + theme(axis.line = element_line(color = "black", linewidth = 1, linetype = 1))
 
 #Plot PCA - biplot isolating Piartal
-
-# with loadings
 
 g4_e <- ggplot(pc_p.dataframe, aes(x = PC1, y = PC2, color = Ware)) +
   geom_point(size=3) +
@@ -911,15 +881,10 @@ plot((g4) + theme(axis.line = element_line(color = "black", linewidth = 1, linet
 dev.off()
 
 
-# hcluster no capuli 
-
-library(dplyr)
-library(ggplot2)
-library(stats)
-library(dendextend)
+## **Hierarchical Cluster Analysis** 
 
 # Select the columns for clustering
-fabric_cluster <- filter(fabric_p_dataset, Ware %in% c("Piartal", "Piartal - 1", 
+fabric_cluster <- filter(fabric_p_dataset, Ware %in% c("Capulí", "Piartal", "Piartal - 1", 
                                       "Piartal - 2", "Tuza", "Tuza - Red Slip"))
 fabric_cluster <- fabric_cluster %>%
   select(Sample, Ware, Al, K, Ca, Ti, Fe, Mn, Zn, Rb, Y, Zr, Nb, Pb)
@@ -936,6 +901,7 @@ dend <- as.dendrogram(hc)
 labels(dend) <- fabric_cluster$Sample[order.dendrogram(dend)]
 
 ware_colors <- c(
+  "Capulí" = "#1B9E77",
   "Piartal" = "#7570B3",
   "Piartal - 1" = "#E6AB02",
   "Piartal - 2" = "#A6761D",
@@ -951,20 +917,22 @@ plot(dend, main = "Hierarchical Clustering of Samples")
 legend("topright", legend = names(ware_colors), fill = ware_colors, title = "Ware Group", cex = 0.5)
 
 # Save PNG file
-png(filename = "supplemental_Piartal_hc.png", width = 2400, height = 1600, res=300)
+png(filename = "supplemental_hc.png", width = 2400, height = 1600, res=300)
 plot(dend, main = "Hierarchical Clustering of Samples")
 legend("topright", legend = names(ware_colors), fill = ware_colors, title = "Ware Group", cex = 0.5)
 dev.off()
 
 #----------------------**Compositional data - SEM**-------------------------------
 
-
-library(compositions)
 library(rio)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 library(ggtern)
+library(plyr)
+library(devtools) 
+library(ggbiplot) 
+library("corrr")
 
 
 # Importing the dataset
@@ -972,14 +940,13 @@ SEM_database <- rio::import("inclusions.csv")
 feldspars <- rio::import("Fldspr.csv")
 
 
-#cleaning the dataset
+## **Cleaning the dataset**
 SEM_database$Sample <- as.factor(SEM_database$Sample)
 SEM_database$Ware <- as.factor(SEM_database$Ware)
 SEM_database$component <- as.factor(SEM_database$component)
 
 feldspars$Sample <- as.factor(feldspars$Sample)
 feldspars$Ware <- as.factor(feldspars$Ware)
-
 
 # checking groups
 summary(SEM_database$Ware)
@@ -1019,7 +986,9 @@ feldspars$Ware <- as.factor(feldspars$Ware)
 summary(feldspars$Ware)
 
 
-# Subsetting the dataframe into groups based on 'component' factors
+## **Subsetting the dataframe** 
+
+# Creating groups based on 'component' factors
 fabric_SEM_dataset <- filter(SEM_database, component %in% c("fabric"))
 glassy_dataset <- filter(SEM_database, component %in% c("glassy inclusion"))
 feldspars <- filter(SEM_database, component %in% c("feldspar"))
@@ -1027,7 +996,8 @@ FeTi_dataset <- filter(SEM_database, component %in% c("Fe-Ti inclusion"))
 generalinclusion_dataset <- filter(SEM_database, component %in% c("inclusion", "feldspar"))
 mostinclusion_dataset <- filter(SEM_database, component %in% c("inclusion", "feldspar", "glassy inclusion"))
 
-# plotting compositional biplots for inclusion features
+
+## **Plotting compositional biplots**
 
 shapes <- c(1, 2, 8, 6, 15, 0, 16, 17)
 
@@ -1050,7 +1020,7 @@ plot(Si_vs_Al + theme(axis.line = element_line(color = "black", linewidth = 1, l
 dev.off()
 
 
-# plotting ternary diagrams 
+## **Plotting ternary diagrams** 
 
 feldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) +
   geom_point(shape = 21, color = "black", size = 2.5, stroke = 0.5, alpha = 0.8) +  
@@ -1065,13 +1035,9 @@ feldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) +
     tern.axis.line.T = element_line(color = "black", size = 1.2),
     tern.axis.line.L = element_line(color = "black", size = 1.2),
     tern.axis.line.R = element_line(color = "black", size = 1.2),
-    
-    # Remove major grid lines
     tern.panel.grid.major.T = element_blank(),
     tern.panel.grid.major.L = element_blank(),
     tern.panel.grid.major.R = element_blank(),
-    
-    # Remove minor grid lines
     tern.panel.grid.minor.T = element_blank(),
     tern.panel.grid.minor.L = element_blank(),
     tern.panel.grid.minor.R = element_blank(), 
@@ -1084,6 +1050,7 @@ plot(feldsparternary)
 png(filename = "Figure13.png", width = 2400, height = 2400, res=300)
 plot(feldsparternary)
 dev.off()
+
 
 Capulifeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) +
   geom_point(shape = 21, color = "black", size = 3, stroke = 0.5) +  
@@ -1098,13 +1065,9 @@ Capulifeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)
     tern.axis.line.T = element_line(color = "black", size = 1.2),
     tern.axis.line.L = element_line(color = "black", size = 1.2),
     tern.axis.line.R = element_line(color = "black", size = 1.2),
-    
-    # Remove major grid lines
     tern.panel.grid.major.T = element_blank(),
     tern.panel.grid.major.L = element_blank(),
     tern.panel.grid.major.R = element_blank(),
-    
-    # Remove minor grid lines
     tern.panel.grid.minor.T = element_blank(),
     tern.panel.grid.minor.L = element_blank(),
     tern.panel.grid.minor.R = element_blank(), 
@@ -1115,6 +1078,7 @@ Capulifeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)
 png(filename = "Figure14a.png", width = 2400, height = 2400, res=300)
 plot(Capulifeldsparternary)
 dev.off()
+
 
 Piartalfeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) +
   geom_point(shape = 21, color = "black", size = 3, stroke = 0.5) +  
@@ -1129,13 +1093,9 @@ Piartalfeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware
     tern.axis.line.T = element_line(color = "black", size = 1.2),
     tern.axis.line.L = element_line(color = "black", size = 1.2),
     tern.axis.line.R = element_line(color = "black", size = 1.2),
-    
-    # Remove major grid lines
     tern.panel.grid.major.T = element_blank(),
     tern.panel.grid.major.L = element_blank(),
     tern.panel.grid.major.R = element_blank(),
-    
-    # Remove minor grid lines
     tern.panel.grid.minor.T = element_blank(),
     tern.panel.grid.minor.L = element_blank(),
     tern.panel.grid.minor.R = element_blank(), 
@@ -1146,6 +1106,7 @@ Piartalfeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware
 png(filename = "Figure14b.png", width = 2400, height = 2400, res=300)
 plot(Piartalfeldsparternary)
 dev.off()
+
 
 Tuzafeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) +
   geom_point(shape = 21, color = "black", size = 3, stroke = 0.5) +  
@@ -1159,13 +1120,9 @@ Tuzafeldsparternary <- ggtern(data=feldspars, aes(x=Ab, y=An, z=Or, fill=Ware)) 
     tern.axis.line.T = element_line(color = "black", size = 1.2),
     tern.axis.line.L = element_line(color = "black", size = 1.2),
     tern.axis.line.R = element_line(color = "black", size = 1.2),
-    
-    # Remove major grid lines
     tern.panel.grid.major.T = element_blank(),
     tern.panel.grid.major.L = element_blank(),
     tern.panel.grid.major.R = element_blank(),
-    
-    # Remove minor grid lines
     tern.panel.grid.minor.T = element_blank(),
     tern.panel.grid.minor.L = element_blank(),
     tern.panel.grid.minor.R = element_blank(), 
@@ -1179,11 +1136,10 @@ png(filename = "Figure14c.png", width = 2400, height = 2400, res=300)
 plot(Tuzafeldsparternary)
 dev.off()
 
-#histograms of feldspars
 
-library(ggplot2)
+## **Create histograms of feldspars anorthite and albite contributions**
 
-library(plyr)
+#compute mean anorthite (An) contibutions
 mean_An <- ddply(feldspars, "Ware", summarise, mean = mean(An, na.rm = TRUE))
 head(mean_An)
 
@@ -1205,6 +1161,7 @@ png(filename = "anorthite_supplemental.png", width = 2400, height = 2400, res=30
 plot(anorthite)
 dev.off()
 
+#compute mean albite (Ab) contibutions
 mean_Ab <- ddply(feldspars, "Ware", summarise, mean = mean(Ab, na.rm = TRUE))
 head(mean_Ab)
 
@@ -1226,6 +1183,8 @@ png(filename = "albite_supplemental.png", width = 2400, height = 2400, res=300)
 plot(albite)
 dev.off()
 
+
+# isolate the feldspars just in the Tuza ware ceramics
 feldspars_Tuza <- filter(feldspars, Ware %in% c("Tuza"))
 
 mean_T_Ab <- ddply(feldspars_Tuza, "Sample", summarise, mean = mean(Ab, na.rm = TRUE))
@@ -1246,30 +1205,20 @@ png(filename = "albite_Tuza_supplemental.png", width = 2400, height = 2400, res=
 plot(albite_Tuza)
 dev.off()
 
-# creating the composition groups for the different components for PCA, 
-# Discrimination between the majority of tephra layers is 
-# usually achieved easily by analysis of the ten major and minor elements 
-# present in the magma (Na, Mg, Al, Si, P, K, Ca, Ti, Mn, Fe)
 
-library(devtools) 
-library(ggbiplot) 
-library("corrr")
-library(ggbiplot)
-
+## PCA of the inclusions
 
 # select all inclusions but exclude fabric
-
 PCA_dataset <- filter(SEM_database, 
             component %in% c("Other minerals", "feldspar", 
             "glassy inclusion", "Fe-Ti inclusion",  
             "quartz", "rock fragment", "slip inclusion"))
 
-
+# PCA on all nine major oxides (PCA follows procedures above)
 pcall <- prcomp(PCA_dataset[,c("SiO2", "Na2O", "MgO", "Al2O3", "P2O5", "K2O", 
                                "CaO", "TiO2", "FeO")],
                 center = TRUE,
                 scale. = TRUE) 
-
 attributes(pcall) 
 
 PC_all  <- ggbiplot(pcall,
@@ -1294,19 +1243,17 @@ summary(pcall.dataframe$component)
 file.create('all_scores_SEM.txt')
 export(pcall.dataframe, 'all_scores_SEM.txt')
 
-# variance explained
+# calculate variance explained
 explained_variance_inclusions <- pcall$sdev^2
 proportion_variance_inclusions <- explained_variance_inclusions / sum(explained_variance_inclusions)
 list(proportion_variance_inclusions)
 
-
-# Loadings scaled for visualization
+# Designate loadings for element vectors, scaled for visualization
 loadingsall <- as.data.frame(pcall$rotation)
-
 loadingsall_scaled <- loadingsall*7
-
 loadingsall_scaled$Variable <- rownames(loadingsall)
 
+#Plot PCA by ware
 PC_all.1 <- ggplot(pcall.dataframe, aes(x = PC1, y = PC2, fill=Ware)) +
   geom_point(shape = 21, color = "black", size = 2.5, stroke = 0.5, alpha = 0.8) +  
   scale_fill_manual(name = "Ware", 
@@ -1327,6 +1274,7 @@ plot(PC_all.1) + theme(axis.line = element_line(color = "black", linewidth = 1, 
 dev.off()
 
 
+#Plot PCA by inclusion type 
 PC_all.2 <- ggplot(pcall.dataframe, aes(x = PC1, y = PC2, color=component)) +
   geom_point(size = 2) +  
   scale_color_brewer(palette = "Set2") +
@@ -1348,21 +1296,25 @@ png(filename = "Figure12b.png", width = 3600, height = 2400, res=300)
 plot(PC_all.2) + theme(axis.line = element_line(color = "black", linewidth = 1, linetype = 1))
 dev.off()
 
+
 #----------------------**Radiocarbon**-----------------------------------------
 
-#Radiocarbon dates
+#Load the relevant packages
 
 library(rcarbon)
 library(rio)
 library(dplyr)
 
+# import the data
 alldates <- rio::import("radiocarbon.csv")
 
+## **Clean the dataframe**
 head(alldates)
 
 alldates$Municipality <- as.factor(alldates$Municipality)
 alldates$`Ceramic Ware identification` <- as.factor(alldates$`Ceramic Ware identification`)
 
+#select just the dates from the Atriz valley
 atriz.dates <- filter(alldates, Municipality %in% c("Pasto"))
 
 atriz.dates <-  atriz.dates %>%
@@ -1374,10 +1326,20 @@ atriz.dates <-  atriz.dates %>%
   ))
 atriz.dates$`Ceramic Ware identification` <- as.factor(atriz.dates$`Ceramic Ware identification`)
 
+## **Calibrate the selected dates**
 atriz <- calibrate(x = atriz.dates$`Date (BP)`, errors = atriz.dates$`error (BP)`, 
                 ids = atriz.dates$`radiocarbon codes`, dateDetails = atriz.dates$`Ceramic Ware identification`)
 plot(atriz)
 
+##**Plot the calibrated dates**
+
 multiplot(atriz, calendar = "BP", label.offset = 300, decreasing = TRUE,
           gapFactor = 0.1, col.fill = atriz$metadata$Details)
 
+
+pdf("Figure27.pdf", width = 11, height = 8) 
+multiplot(atriz, calendar = "BP", label.offset = 300, decreasing = TRUE,
+          gapFactor = 0.1, col.fill = atriz$metadata$Details)
+dev.off()
+
+# colors adjusted to follow conventions in Inkscape
