@@ -1,6 +1,6 @@
 **This repository contains the data and scripts used in the manuscript:**
 
-Klesner, C.E., Crawford, R., Aristizábal Losada, L., Bernal Arévalo, M., Campos-Quintero, L.M., Cárdenas Arroyo, F., Maya Cabrera, M.C., Murillo Jaramillo, P.A., Pérez Fernández, D.A., Sáenz-Samper, J., Uribe-Villegas, M.A., Martinón-Torres, M. 'Disentangling technological traditions: comparative chaînes opératoires of painted pre-Hispanic ceramics from Nariño, Colombia.' 
+Klesner, C.E., Crawford, R., Aristizábal Losada, L., Bernal Arévalo, M., Campos-Quintero, L.M., Cárdenas Arroyo, F., Maya Cabrera, M.C., Murillo Jaramillo, P.A., Pérez Fernández, D.A., Sáenz-Samper, J., Uribe-Villegas, M.A., Martinón-Torres, M. 'Disentangling technological traditions: comparative chaînes opératoires of painted pre-Hispanic ceramics from Nariño, Colombia.' Open Archaeology, 10.1515/opar-2025-0038. 
 
 The repository is organised into three directories: 
 Figures, Scripts, and Supplemental Materials 
